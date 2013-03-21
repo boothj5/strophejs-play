@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Simple Chat</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script type='text/javascript'
+	    src='http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.min.js'></script>
+    <script type='text/javascript'
+	    src='strophejs/strophe.js'></script>
+    <script type='text/javascript'
+	    src='chat.js'></script>
+</head>
+<body>
+    <div id='login' style='text-align: center'>
+        <form name='login-form'>
+            <label for='jid'>Username:</label>
+            <input type='text' id='jid' />
+            <label for='password'>Password:</label>
+            <input type='password' id='password' />
+            <input type='button' id='connect' value='connect' />
+        </form>
+    </div>
+    <hr />
+    <div id="out-message" style="text-align: center">
+        <form name="out-message-form">
+            <label for="to-jid">Contact:</label>
+            <input type="text" id="to-jid" size="30"/><br>
+            <label for="message">Message:</label>
+            <input type="text" id="message" size="80"/><br>
+            <input type='button' id='send' value='send' />
+        </form>
+    </div>
+    <hr/>
+    <div id="chat">
+        <form name="messages-form">
+            <textarea id="messages" rows="10" cols="100"></textarea>
+        </form>
+    </div>
+    <hr />
+    <div id='log'></div>
+</body>
+</html>
