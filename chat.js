@@ -1,14 +1,19 @@
 var BOSH_SERVICE = '/http-bind',
-    connection = null;
-    messagebox = null;
+    connection = null,
+    messagebox = null,
+    logbox = null,
+    rosterbox = null;
 
-function log(msg) 
+function log(msg)
 {
-    $('#log').append('<div></div>').append(document.createTextNode(msg));
+    logbox.val(logbox.val() + msg + "\n");
+    logbox.scrollTop(logbox[0].scrollHeight - logbox.height());
 }
 
 function onConnect(status)
 {
+    var iq = null;
+
     switch (status) {
     case Strophe.Status.CONNECTING:
     	log('Connecting.');
@@ -26,12 +31,32 @@ function onConnect(status)
         break;
     case Strophe.Status.CONNECTED:
 	    log('Connected.');
-	    connection.addHandler(onMessage, null, 'message', null, null,  null); 
-	    connection.send($pres().tree());
+	    connection.addHandler(onMessage, null, 'message', null, null,  null);
+
+        iq = $iq({type: 'get'}).c('query', {xmlns: 'jabber:iq:roster'});
+        connection.sendIQ(iq, onRoster);
+
         break;
     default:
         break;
     }
+}
+
+function onRoster(iq) {
+    $(iq).find('item').each(function () {
+        var jid = $(this).attr('jid'),
+            name = $(this).attr('name'),
+            show = "";
+
+        show += jid;
+        if (name) {
+            show += " (" + name + ")";
+        }
+
+        rosterbox.val(rosterbox.val() + show + "\n");
+    });
+
+    connection.send($pres().tree());
 }
 
 function onMessage(msg) {
@@ -46,7 +71,7 @@ function onMessage(msg) {
         messagebox.val(messagebox.val() + from + ": " + message + "\n");
         messagebox.scrollTop(messagebox[0].scrollHeight - messagebox.height());
     }
-    
+
     return true;
 }
 
@@ -54,7 +79,7 @@ function login() {
     var button = $('#connect').get(0),
         jid = null,
         password = null;
-    
+
     if (button.value == 'connect') {
         button.value = 'disconnect';
         jid = $('#jid').get(0).value;
@@ -82,6 +107,15 @@ $(document).ready(function () {
     connection = new Strophe.Connection(BOSH_SERVICE);
     messagebox = $("#messages");
     messagebox.val("");
+    logbox = $("#log-messages");
+    logbox.val("");
+    rosterbox = $("#roster");
+    rosterbox.val("");
+
+    connection.rawInput = function (data) { log('RECV: ' + data); };
+    connection.rawOutput = function (data) { log('SEND: ' + data); };
+
+    Strophe.log = function (level, msg) { log('LOG: ' + msg); };
 
     $('#connect').bind('click', login);
     $('#send').bind('click', send);
