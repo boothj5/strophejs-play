@@ -3,7 +3,8 @@ var BOSH_SERVICE = '/http-bind',
     messagebox = null,
     logbox = null,
     rosterbox = null,
-    onlineContacts = [];
+    onlineContacts = [],
+    roster = [];
 
 function log(msg)
 {
@@ -14,7 +15,7 @@ function log(msg)
 function onConnect(status)
 {
     var iq = null;
-    
+
     switch (status) {
     case Strophe.Status.CONNECTING:
     	log('Connecting.');
@@ -45,18 +46,56 @@ function onConnect(status)
 }
 
 function onPresence(pres) {
-    var fromJid = $(pres).attr('from'),
+    var fromJid = $(pres).attr("from"),
         fromBareJid = Strophe.getBareJidFromJid(fromJid),
         myBareJid = Strophe.getBareJidFromJid(connection.jid),
-        type = $(pres).attr('type');
-        contactDropDown = $('#to-jid');
+        type = $(pres).attr("type"),
+        show = $(pres).children("show").text(),
+        statusMsg = $(pres).children("status").text(),
+        contactDropDown = $('#to-jid'),
+        line;
+
+    $.each(roster, function (index, rosterEntry) {
+        if (rosterEntry.jid === fromBareJid) {
+            if (type === "unavailable") {
+                rosterEntry.presence = "offline";
+                rosterEntry.message = null;
+            } else {
+                if (show) {
+                    rosterEntry.presence = show;
+                } else {
+                    rosterEntry.presence = 'online';
+                }
+                if (statusMsg) {
+                    rosterEntry.message = statusMsg;
+                } else {
+                    rosterEntry.message = null;
+                }
+            }
+        }
+    });
+
+    showRoster();
 
     if (fromBareJid !== myBareJid) {
         if (type !== 'unavailable') {
             if (!_.contains(onlineContacts, fromBareJid)) {
                 onlineContacts.push(fromBareJid);
-                showMessage(fromBareJid + " is online");
             }
+
+            line = fromBareJid + " is ";
+
+            if (show) {
+                line += show;
+            } else {
+                line += "online";
+            }
+
+            if (statusMsg) {
+                line += ", \"" + statusMsg + "\"";
+            }
+
+            showMessage(line);
         } else {
             onlineContacts = _.reject(onlineContacts, function (jid) {
                 return (jid === fromBareJid);
@@ -70,7 +109,7 @@ function onPresence(pres) {
             contactDropDown.append($("<option />").val(contact).text(contact));
         });
     }
-    
+
     return true;
 }
 
@@ -78,17 +117,41 @@ function onRoster(iq) {
     $(iq).find('item').each(function () {
         var jid = $(this).attr('jid'),
             name = $(this).attr('name'),
-            show = "";
+            show = "",
+            rosterEntry = {
+                jid: jid,
+                name: name,
+                presence: 'offline',
+                message: null
+            };
 
-        show += jid;
-        if (name) {
-            show += " (" + name + ")";
-        }
-
-        rosterbox.val(rosterbox.val() + show + "\n");
+        roster.push(rosterEntry);
     });
 
+    showRoster();
+
     connection.send($pres().tree());
+}
+
+function showRoster() {
+    rosterbox.val("");
+    $.each(roster, function (index, rosterEntry) {
+        var line = "";
+
+        line += rosterEntry.jid;
+
+        if (rosterEntry.name) {
+            line += " (" + rosterEntry.name + ")";
+        }
+
+        line += ": " + rosterEntry.presence;
+
+        if (rosterEntry.message !== null) {
+            line += ", \"" + rosterEntry.message + "\"";
+        }
+
+        rosterbox.val(rosterbox.val() + line + "\n");
+    });
 }
 
 function showMessage(message) {
@@ -105,7 +168,7 @@ function onMessage(msg) {
     if (type == "chat" && elems.length > 0) {
         var body = elems[0],
             message = Strophe.getText(body);
-    
+
         showMessage(bareFromJid + ": " + message);
     }
 
