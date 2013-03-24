@@ -97,7 +97,8 @@ function showMessage(message) {
 }
 
 function onMessage(msg) {
-    var from = msg.getAttribute("from"),
+    var fromJid = msg.getAttribute("from"),
+        bareFromJid = Strophe.getBareJidFromJid(fromJid),
         type = msg.getAttribute("type"),
         elems = msg.getElementsByTagName("body");
 
@@ -105,7 +106,7 @@ function onMessage(msg) {
         var body = elems[0],
             message = Strophe.getText(body);
     
-        showMessage(from + ": " + message);
+        showMessage(bareFromJid + ": " + message);
     }
 
     return true;
@@ -129,13 +130,14 @@ function login() {
 
 function send() {
     var to = $('#to-jid').get(0).value,
+        myBareJid = Strophe.getBareJidFromJid(connection.jid);
         message = $('#message').get(0).value,
         reply = $msg({to: to, type: 'chat'})
             .c("body")
             .t(message);
 
     connection.send(reply.tree());
-    showMessage(to + ": " + message);
+    showMessage(myBareJid + ": " + message);
 }
 
 $(document).ready(function () {
