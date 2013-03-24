@@ -2,7 +2,8 @@ var BOSH_SERVICE = '/http-bind',
     connection = null,
     messagebox = null,
     logbox = null,
-    rosterbox = null;
+    rosterbox = null,
+    onlineContacts = [];
 
 function log(msg)
 {
@@ -13,7 +14,7 @@ function log(msg)
 function onConnect(status)
 {
     var iq = null;
-
+    
     switch (status) {
     case Strophe.Status.CONNECTING:
     	log('Connecting.');
@@ -32,6 +33,7 @@ function onConnect(status)
     case Strophe.Status.CONNECTED:
 	    log('Connected.');
 	    connection.addHandler(onMessage, null, 'message', null, null,  null);
+        connection.addHandler(onPresence, null, 'presence', null, null, null);
 
         iq = $iq({type: 'get'}).c('query', {xmlns: 'jabber:iq:roster'});
         connection.sendIQ(iq, onRoster);
@@ -40,6 +42,36 @@ function onConnect(status)
     default:
         break;
     }
+}
+
+function onPresence(pres) {
+    var fromJid = $(pres).attr('from'),
+        fromBareJid = Strophe.getBareJidFromJid(fromJid),
+        myBareJid = Strophe.getBareJidFromJid(connection.jid),
+        type = $(pres).attr('type');
+        contactDropDown = $('#to-jid');
+
+    if (fromBareJid !== myBareJid) {
+        if (type !== 'unavailable') {
+            if (!_.contains(onlineContacts, fromBareJid)) {
+                onlineContacts.push(fromBareJid);
+                showMessage(fromBareJid + " is online");
+            }
+        } else {
+            onlineContacts = _.reject(onlineContacts, function (jid) {
+                return (jid === fromBareJid);
+            });
+            showMessage(fromBareJid + " is offline");
+        }
+
+        contactDropDown.empty();
+        contactDropDown.append($("<option />").text("Choose a contact..."));
+        $.each(onlineContacts, function (index, contact) {
+            contactDropDown.append($("<option />").val(contact).text(contact));
+        });
+    }
+    
+    return true;
 }
 
 function onRoster(iq) {
@@ -59,6 +91,11 @@ function onRoster(iq) {
     connection.send($pres().tree());
 }
 
+function showMessage(message) {
+    messagebox.val(messagebox.val() + message + "\n");
+    messagebox.scrollTop(messagebox[0].scrollHeight - messagebox.height());
+}
+
 function onMessage(msg) {
     var from = msg.getAttribute("from"),
         type = msg.getAttribute("type"),
@@ -67,9 +104,8 @@ function onMessage(msg) {
     if (type == "chat" && elems.length > 0) {
         var body = elems[0],
             message = Strophe.getText(body);
-
-        messagebox.val(messagebox.val() + from + ": " + message + "\n");
-        messagebox.scrollTop(messagebox[0].scrollHeight - messagebox.height());
+    
+        showMessage(from + ": " + message);
     }
 
     return true;
@@ -99,8 +135,7 @@ function send() {
             .t(message);
 
     connection.send(reply.tree());
-    messagebox.val(messagebox.val() + to + ": " + message + "\n");
-    messagebox.scrollTop(messagebox[0].scrollHeight - messagebox.height());
+    showMessage(to + ": " + message);
 }
 
 $(document).ready(function () {

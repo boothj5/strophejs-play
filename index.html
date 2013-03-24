@@ -3,6 +3,7 @@
 <head>
     <title>Simple Chat</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script type='text/javascript' src='lib/underscore.js'></script>
     <script type='text/javascript' src='lib/jquery-1.9.1.js'></script>
     <script type='text/javascript' src='lib/strophe.js'></script>
     <script type='text/javascript' src='chat.js'></script>
@@ -21,7 +22,7 @@
     <div id="out-message" style="text-align: center">
         <form name="out-message-form">
             <label for="to-jid">Contact:</label>
-            <input type="text" id="to-jid" size="30"/><br>
+            <select id="to-jid" style="width: 300px"></select>
             <label for="message">Message:</label>
             <input type="text" id="message" size="60"/><br>
             <input type='button' id='send' value='send' />
